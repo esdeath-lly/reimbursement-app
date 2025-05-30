@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>报销管理系统</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container py-4">
+  <h1 class="mb-4">报销管理系统</h1>
+  <div class="mb-4">
+    <button class="btn btn-primary me-2" onclick="showForm()">填写报销信息</button>
+    <button class="btn btn-secondary" onclick="viewData()">查看报销信息</button>
+  </div>
+
+  <!-- 填写表单 -->
+  <form id="expenseForm" enctype="multipart/form-data" class="row g-3 d-none">
+    <div class="col-md-4">
+      <label for="date" class="form-label">发票日期</label>
+      <input type="date" class="form-control" name="date" required>
+    </div>
+    <div class="col-md-4">
+      <label for="number" class="form-label">发票号码</label>
+      <input type="text" class="form-control" name="number" required>
+    </div>
+    <div class="col-md-4">
+      <label for="content" class="form-label">发票内容</label>
+      <input type="text" class="form-control" name="content" required>
+    </div>
+    <div class="col-md-4">
+      <label for="amount" class="form-label">发票金额</label>
+      <input type="number" class="form-control" name="amount" step="0.01" required>
+    </div>
+    <div class="col-md-4">
+      <label for="user" class="form-label">具体使用人</label>
+      <input type="text" class="form-control" name="user" required>
+    </div>
+    <div class="col-md-4">
+      <label for="selfPay" class="form-label">是否自费</label>
+      <select class="form-select" name="selfPay" required>
+        <option value="否">否</option>
+        <option value="是">是</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label for="company" class="form-label">对方公司</label>
+      <input type="text" class="form-control" name="company">
+    </div>
+    <div class="col-md-4">
+      <label for="bankNumber" class="form-label">银行号</label>
+      <input type="text" class="form-control" name="bankNumber">
+    </div>
+    <div class="col-md-4">
+      <label for="bankAccount" class="form-label">银行账户</label>
+      <input type="text" class="form-control" name="bankAccount">
+    </div>
+    <div class="col-md-6">
+      <label for="pdf" class="form-label">上传 PDF 报销单</label>
+      <input type="file" class="form-control" name="pdf" accept="application/pdf">
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-success">提交</button>
+    </div>
+  </form>
+
+  <!-- 报销数据展示区 -->
+  <div id="dataView" class="mt-4 d-none">
+    <h3>报销信息</h3>
+    <button class="btn btn-outline-success mb-2" onclick="download('excel')">下载 Excel</button>
+    <button class="btn btn-outline-primary mb-2" onclick="download('csv')">下载 CSV</button>
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>发票日期</th><th>发票号码</th><th>发票内容</th><th>发票金额</th>
+            <th>具体使用人</th><th>是否自费</th><th>对方公司</th>
+            <th>银行号</th><th>银行账户</th><th>PDF附件</th>
+          </tr>
+        </thead>
+        <tbody id="dataBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const showForm = () => {
+      document.getElementById('expenseForm').classList.remove('d-none');
+      document.getElementById('dataView').classList.add('d-none');
+    }
+
+    const viewData = () => {
+      document.getElementById('expenseForm').classList.add('d-none');
+      document.getElementById('dataView').classList.remove('d-none');
+      fetch('/data')
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById('dataBody');
+          tbody.innerHTML = '';
+          data.forEach(row => {
+            const tr = document.createElement('tr');
+            for (let key in row) {
+              const td = document.createElement('td');
+              if (key === '附件PDF' && row[key]) {
+                const link = document.createElement('a');
+                link.href = `/download_pdf/${row[key]}`;
+                link.textContent = '下载';
+                link.target = '_blank';
+                td.appendChild(link);
+              } else {
+                td.textContent = row[key];
+              }
+              tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+          });
+        });
+    }
+
+    document.getElementById('expenseForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      fetch('/submit', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(msg => {
+        alert(msg.message);
+        this.reset();
+        showForm();
+      });
+    });
+
+    const download = (type) => {
+      if (type === 'excel') window.location.href = '/download_excel';
+      else if (type === 'csv') window.location.href = '/download';
+    }
+  </script>
+</body>
+</html>
